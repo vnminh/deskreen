@@ -27,12 +27,6 @@ import {
 import { handlePlayerToggleFullscreen } from './handlePlayerToggleFullscreen';
 import initScreenfullOnChange from './initScreenfullOnChange';
 import { ScreenSharingSource } from '../../features/PeerConnection/ScreenSharingSourceEnum';
-import {
-	trackAnalyticsEvent,
-	setConsentStatus,
-	updateAnalyticsConsent,
-} from '../../utils/analytics';
-import PrivacyControlDialog from '../PrivacyControlDialog';
 import './index.css';
 
 const videoQualityButtonStyle: React.CSSProperties = {
@@ -71,7 +65,6 @@ function PlayerControlPanel(props: PlayerControlPanelProps) {
 	const isFullScreenAPIAvailable = screenfull.isEnabled;
 
 	const [isFullScreenOn, setIsFullScreenOn] = useState(false);
-	const [isPrivacyDialogOpen, setIsPrivacyDialogOpen] = useState(false);
 
 	useEffect(() => {
 		const cleanup = initScreenfullOnChange(setIsFullScreenOn);
@@ -89,47 +82,26 @@ function PlayerControlPanel(props: PlayerControlPanelProps) {
 	}, [setIsFullScreenOn]);
 
 	const handleLogoClick = useCallback(() => {
-		trackAnalyticsEvent('logo_clicked', {
-			destination: 'https://deskreen.com',
-		});
 		window.open('https://deskreen.com', '_blank');
 	}, []);
 
 	const handleContributeClick = useCallback(() => {
-		trackAnalyticsEvent('contribute_clicked', {
-			destination: 'https://deskreen.com/download',
-		});
 		window.open('https://deskreen.com/download', '_blank');
 	}, []);
 
 	const handlePlayPauseClick = useCallback(() => {
-		const nextAction = isPlaying ? 'pause' : 'play';
-		trackAnalyticsEvent(
-			nextAction === 'play' ? 'play_button_clicked' : 'pause_button_clicked',
-			{
-				target_state: nextAction === 'play' ? 'playing' : 'paused',
-			},
-		);
 		handleClickPlayPause();
-	}, [handleClickPlayPause, isPlaying]);
+	}, [handleClickPlayPause]);
 
 	const handleVideoQualitySelect = useCallback(
 		(quality: VideoQualityType) => {
-			if (selectedVideoQuality !== quality) {
-				trackAnalyticsEvent('video_quality_selected', {
-					quality,
-				});
-			}
 			setVideoQuality(quality);
 		},
-		[selectedVideoQuality, setVideoQuality],
+		[setVideoQuality],
 	);
 
 	const handleDefaultPlayerToggle = useCallback(() => {
 		const nextState = !isDefaultPlayerTurnedOn;
-		trackAnalyticsEvent('default_player_toggled', {
-			state: nextState ? 'on' : 'off',
-		});
 		onSwitchChangedCallback(nextState);
 	}, [isDefaultPlayerTurnedOn, onSwitchChangedCallback]);
 
@@ -137,50 +109,14 @@ function PlayerControlPanel(props: PlayerControlPanelProps) {
 		const result = isDefaultPlayerTurnedOn
 			? handleClickFullscreenWhenDefaultPlayerIsOn()
 			: handleClickFullscreen();
-		if (result === 'failed') {
-			trackAnalyticsEvent('fullscreen_toggle_failed', {
-				player_mode: isDefaultPlayerTurnedOn ? 'default' : 'custom',
-			});
-			return;
-		}
-		trackAnalyticsEvent('fullscreen_toggled', {
-			state: result === 'entered' ? 'on' : 'off',
-			player_mode: isDefaultPlayerTurnedOn ? 'default' : 'custom',
-		});
+		if (result === 'failed') return;
 	}, [
 		handleClickFullscreen,
 		handleClickFullscreenWhenDefaultPlayerIsOn,
 		isDefaultPlayerTurnedOn,
 	]);
 
-	const handlePrivacyControlClick = useCallback(() => {
-		setIsPrivacyDialogOpen(true);
-	}, []);
-
-	const handlePrivacyDialogClose = useCallback(() => {
-		setIsPrivacyDialogOpen(false);
-	}, []);
-
-	const handlePrivacyAccept = useCallback(() => {
-		setConsentStatus('accepted');
-		updateAnalyticsConsent('accepted');
-		setIsPrivacyDialogOpen(false);
-	}, []);
-
-	const handlePrivacyOptOut = useCallback(() => {
-		setConsentStatus('opted-out');
-		updateAnalyticsConsent('opted-out');
-		setIsPrivacyDialogOpen(false);
-	}, []);
-
 	return (
-		<>
-			<PrivacyControlDialog
-				isOpen={isPrivacyDialogOpen}
-				onClose={handlePrivacyDialogClose}
-				onAccept={handlePrivacyAccept}
-				onOptOut={handlePrivacyOptOut}
-			/>
 			<Card elevation={4}>
 				<Row between="xs" middle="xs">
 					<Col xs={12} md={3}>
@@ -437,24 +373,11 @@ function PlayerControlPanel(props: PlayerControlPanelProps) {
 										marginBottom: '12px',
 									}}
 								/>
-								<Button
-									minimal
-									icon="shield"
-									onClick={handlePrivacyControlClick}
-									style={{
-										width: 'fit-content',
-										marginLeft: 'auto',
-										color: '#5C7080',
-									}}
-								>
-									{t('Privacy Settings')}
-								</Button>
 							</Col>
 						</Row>
 					</Col>
 				</Row>
 			</Card>
-		</>
 	);
 }
 

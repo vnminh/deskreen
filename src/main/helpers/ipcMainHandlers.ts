@@ -355,16 +355,6 @@ export const initIpcMainHandlers = (mainWindow: BrowserWindow): void => {
 		const deskreenGlobal = getDeskreenGlobal();
 		const { connectedDevicesService, sharingSessionService, roomIDService } =
 			deskreenGlobal;
-		if (!connectedDevicesService.isSlotAvailable()) {
-			const waitingSession =
-				sharingSessionService.waitingForConnectionSharingSession;
-			waitingSession?.denyConnectionForPartner();
-			waitingSession?.setStatus(SharingSessionStatusEnum.NOT_CONNECTED);
-			sharingSessionService.waitingForConnectionSharingSession = null;
-			connectedDevicesService.resetPendingConnectionDevice();
-			return;
-		}
-
 		const pendingDevice = connectedDevicesService.pendingConnectionDevice;
 		if (!pendingDevice.id) {
 			return;
@@ -376,18 +366,7 @@ export const initIpcMainHandlers = (mainWindow: BrowserWindow): void => {
 			roomIDService.unmarkRoomIDAsTaken(sharingSession.roomID);
 		}
 
-		try {
-			connectedDevicesService.addDevice(pendingDevice);
-		} catch (error) {
-			console.error('failed to occupy single viewer slot', error);
-			if (sharingSession !== null) {
-				sharingSession.setStatus(SharingSessionStatusEnum.ERROR);
-				sharingSession.denyConnectionForPartner();
-				sharingSessionService.waitingForConnectionSharingSession = null;
-			}
-			connectedDevicesService.resetPendingConnectionDevice();
-			return;
-		}
+		connectedDevicesService.addDevice(pendingDevice);
 
 		if (sharingSession !== null) {
 			sharingSession.callPeer();

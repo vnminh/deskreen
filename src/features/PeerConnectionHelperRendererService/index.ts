@@ -39,6 +39,7 @@ export default class RendererWebrtcHelpersService {
 				nodeIntegrationInSubFrames: true,
 				nodeIntegrationInWorker: true,
 				sandbox: false,
+				spellcheck: false,
 			},
 		});
 

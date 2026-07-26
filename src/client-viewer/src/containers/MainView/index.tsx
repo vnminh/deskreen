@@ -23,7 +23,6 @@ import handleDisplayingLoadingSharingIconLoop from './handleDisplayingLoadingSha
 import { ScreenSharingSource } from '../../features/PeerConnection/ScreenSharingSourceEnum';
 import ConnectionIcon from './ConnectionIconEnum';
 import { LoadingSharingIconEnum } from './LoadingSharingIconEnum';
-import { useScreenViewingTracker } from './useScreenViewingTracker';
 
 function MainView() {
 	const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
@@ -109,13 +108,6 @@ function MainView() {
 		}),
 		[promptStep, url],
 	);
-
-	useScreenViewingTracker({
-		streamUrl: url,
-		isPlaying: playing,
-		isErrorDialogOpen,
-		dialogErrorMessage,
-	});
 
 	return (
 		<Grid>
