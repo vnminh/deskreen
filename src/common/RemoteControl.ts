@@ -20,6 +20,10 @@ export type RemoteControlInput =
 			deltaY: number;
 	  }
 	| {
+			type: 'zoom';
+			delta: number;
+	  }
+	| {
 			type: 'key';
 			code: string;
 			action: RemoteControlButtonAction;

@@ -98,6 +98,8 @@ function isRemoteControlInput(value: unknown): value is RemoteControlInput {
 				typeof input.deltaY === 'number' &&
 				Number.isFinite(input.deltaY)
 			);
+		case 'zoom':
+			return typeof input.delta === 'number' && Number.isFinite(input.delta);
 		case 'key':
 			return (
 				typeof input.code === 'string' &&
@@ -148,6 +150,9 @@ export default class RemoteControlService {
 						this.toWheelStep(-untrustedInput.deltaX),
 						this.toWheelStep(-untrustedInput.deltaY),
 					);
+					break;
+				case 'zoom':
+					this.zoom(untrustedInput.delta);
 					break;
 				case 'key':
 					this.toggleKey(
@@ -243,6 +248,19 @@ export default class RemoteControlService {
 			pressed.delete(key);
 		}
 		robot.keyToggle(key, action);
+	}
+
+	private zoom(delta: number): void {
+		if (delta === 0) return;
+		const modifier = process.platform === 'darwin' ? 'command' : 'control';
+		const key = delta > 0 ? '=' : '-';
+		const repeatCount = Math.min(
+			3,
+			Math.max(1, Math.round(Math.abs(delta) / 12)),
+		);
+		for (let index = 0; index < repeatCount; index += 1) {
+			robot.keyTap(key, modifier);
+		}
 	}
 
 	private toWheelStep(delta: number): number {
