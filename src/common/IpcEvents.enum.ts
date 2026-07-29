@@ -33,4 +33,8 @@ export enum IpcEvents {
 	WriteTextToClipboard = 'write-text-to-clipboard',
 	CheckScreenRecordingPermission = 'check-screen-recording-permission',
 	RelaunchApp = 'relaunch-app',
+	GetRemoteControlStatus = 'get-remote-control-status',
+	SetRemoteControlEnabled = 'set-remote-control-enabled',
+	RemoteControlInput = 'remote-control-input',
+	GetUsbTetherNetwork = 'get-usb-tether-network',
 }

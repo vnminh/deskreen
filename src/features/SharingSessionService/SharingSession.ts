@@ -23,6 +23,7 @@ export default class SharingSession {
 	peerConnectionHelperRenderer: BrowserWindow | undefined;
 	onDeviceConnectedCallback: undefined | ((device: Device) => void);
 	desktopCapturerSourceID: string;
+	remoteControlEnabled: boolean;
 
 	constructor(
 		_roomID: string,
@@ -39,6 +40,7 @@ export default class SharingSession {
 		this.status = SharingSessionStatusEnum.NOT_CONNECTED;
 		this.statusChangeListeners = [] as SharingSessionStatusChangeListener[];
 		this.desktopCapturerSourceID = '';
+		this.remoteControlEnabled = false;
 		this.onDeviceConnectedCallback = undefined;
 
 		if (process.env.RUN_MODE === 'test') return;
@@ -82,7 +84,21 @@ export default class SharingSession {
 	}
 
 	destroy(): void {
+		this.setRemoteControlEnabled(false);
 		this.peerConnectionHelperRenderer?.close();
+	}
+
+	setRemoteControlEnabled(enabled: boolean): void {
+		this.remoteControlEnabled = enabled;
+		if (
+			this.peerConnectionHelperRenderer &&
+			!this.peerConnectionHelperRenderer.isDestroyed()
+		) {
+			this.peerConnectionHelperRenderer.webContents.send(
+				'set-remote-control-enabled',
+				enabled,
+			);
+		}
 	}
 
 	setOnDeviceConnectedCallback(callback: (device: Device) => void): void {
@@ -90,6 +106,9 @@ export default class SharingSession {
 	}
 
 	setDesktopCapturerSourceID(id: string): void {
+		if (id !== this.desktopCapturerSourceID && this.remoteControlEnabled) {
+			this.setRemoteControlEnabled(false);
+		}
 		this.desktopCapturerSourceID = id;
 		if (process.env.RUN_MODE === 'test') return;
 		this.peerConnectionHelperRenderer?.webContents.send(

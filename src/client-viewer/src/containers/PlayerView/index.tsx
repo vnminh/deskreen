@@ -9,6 +9,8 @@ import {
 } from '../../constants/appConstants';
 import { type VideoQualityType } from '../../features/VideoAutoQualityOptimizer/VideoQualityEnum';
 import { togglePlayerFullscreen } from '../../utils/playerFullscreen';
+import RemoteControlSurface from '../../components/RemoteControlSurface';
+import type { RemoteControlInput } from '../../../../common/RemoteControl';
 
 interface PlayerViewProps {
 	isWithControls: boolean;
@@ -20,6 +22,10 @@ interface PlayerViewProps {
 	videoQuality: VideoQualityType;
 	screenSharingSourceType: ScreenSharingSourceType;
 	streamUrl: MediaStream | null;
+	isRemoteControlAllowed: boolean;
+	isRemoteControlActive: boolean;
+	setIsRemoteControlActive: (active: boolean) => void;
+	sendRemoteControlInput: (input: RemoteControlInput) => void;
 }
 
 type IOSVideoElement = HTMLVideoElement & {
@@ -41,12 +47,18 @@ function PlayerView(props: PlayerViewProps) {
 		setVideoQuality,
 		videoQuality,
 		streamUrl,
+		isRemoteControlAllowed,
+		isRemoteControlActive,
+		setIsRemoteControlActive,
+		sendRemoteControlInput,
 	} = props;
 
 	// const player = useRef(null);
 
 	const videoRef = useRef<HTMLVideoElement>(null);
-	const toasterRef = useRef<Awaited<ReturnType<typeof OverlayToaster.create>> | null>(null);
+	const toasterRef = useRef<Awaited<
+		ReturnType<typeof OverlayToaster.create>
+	> | null>(null);
 	// no external player ref needed for video.js variant
 
 	useEffect(() => {
@@ -98,12 +110,14 @@ function PlayerView(props: PlayerViewProps) {
 	const handlePlayPauseWithNotification = useCallback(() => {
 		const nextPlaying = !isPlaying;
 		handlePlayPause();
-		
+
 		// show notification after a small delay to ensure state is updated
 		setTimeout(() => {
 			if (toasterRef.current) {
 				toasterRef.current.show({
-					message: nextPlaying ? t('Video stream is playing') : t('Video stream is paused'),
+					message: nextPlaying
+						? t('Video stream is playing')
+						: t('Video stream is paused'),
 					intent: nextPlaying ? 'success' : 'warning',
 					timeout: 2000,
 				});
@@ -140,7 +154,9 @@ function PlayerView(props: PlayerViewProps) {
 					// show warning notification that video stopped and user needs to click play
 					if (toasterRef.current) {
 						toasterRef.current.show({
-							message: t('Video stream paused after exiting fullscreen. Please click Play to continue.'),
+							message: t(
+								'Video stream paused after exiting fullscreen. Please click Play to continue.',
+							),
 							intent: 'warning',
 							timeout: 5000,
 						});
@@ -223,6 +239,11 @@ function PlayerView(props: PlayerViewProps) {
 				setVideoQuality={setVideoQuality}
 				selectedVideoQuality={videoQuality}
 				screenSharingSourceType={screenSharingSourceType}
+				isRemoteControlAllowed={isRemoteControlAllowed}
+				isRemoteControlActive={isRemoteControlActive}
+				onRemoteControlToggle={() =>
+					setIsRemoteControlActive(!isRemoteControlActive)
+				}
 			/>
 			<div
 				id="video-container"
@@ -266,6 +287,9 @@ function PlayerView(props: PlayerViewProps) {
 							playing={isPlaying}
 							containerEl={document.getElementById(PLAYER_WRAPPER_ID)}
 						/>
+					)}
+					{isRemoteControlAllowed && isRemoteControlActive && (
+						<RemoteControlSurface sendInput={sendRemoteControlInput} />
 					)}
 				</div>
 				<canvas id={COMPARISON_CANVAS_ID} style={{ display: 'none' }}></canvas>

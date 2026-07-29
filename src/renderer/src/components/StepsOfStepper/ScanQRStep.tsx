@@ -7,6 +7,8 @@ import {
 	Dialog,
 	Classes,
 	H3,
+	ButtonGroup,
+	Callout,
 } from '@blueprintjs/core';
 import { QRCodeSVG } from 'qrcode.react';
 import { makeStyles, createStyles } from '@material-ui/core';
@@ -18,6 +20,13 @@ import { useTranslation } from 'react-i18next';
 import Logo192 from '../../assets/logo192.png';
 
 const { hostname } = config;
+
+type ConnectionMode = 'lan' | 'usb';
+
+interface UsbTetherNetwork {
+	interfaceName: string;
+	ipAddress: string;
+}
 
 const useStyles = makeStyles(() =>
 	createStyles({
@@ -50,13 +59,18 @@ const useStyles = makeStyles(() =>
 
 const ScanQRStep: React.FC = () => {
 	const { t } = useTranslation();
-	const [clientViewerPort, setClientViewerPort] = useState('80'); // Default port, can be changed later
+	const [clientViewerPort, setClientViewerPort] = useState('');
 	const classes = useStyles();
 
 	const [isViewerSlotAvailable, setIsViewerSlotAvailable] = useState(true);
 	const [roomID, setRoomID] = useState('');
 	const [LOCAL_LAN_IP, setLocalLanIP] = useState('');
 	const [isQRCodeMagnified, setIsQRCodeMagnified] = useState(false);
+	const [connectionMode, setConnectionMode] =
+		useState<ConnectionMode>('lan');
+	const [usbNetwork, setUsbNetwork] = useState<
+		UsbTetherNetwork | undefined
+	>();
 
 	useEffect(() => {
 		window.electron.ipcRenderer
@@ -140,13 +154,24 @@ const ScanQRStep: React.FC = () => {
 			}
 		};
 
+		const fetchUsbTetherNetwork = async (): Promise<void> => {
+			const network = await window.electron.ipcRenderer.invoke(
+				IpcEvents.GetUsbTetherNetwork,
+			);
+			if (!cancelled) {
+				setUsbNetwork(network);
+			}
+		};
+
 		void fetchRoomId();
 		void fetchLocalIp();
+		void fetchUsbTetherNetwork();
 		const roomInterval = setInterval(() => {
 			void fetchRoomId();
 		}, 1000);
 		const ipInterval = setInterval(() => {
 			void fetchLocalIp();
+			void fetchUsbTetherNetwork();
 		}, 1000);
 
 		return () => {
@@ -157,28 +182,75 @@ const ScanQRStep: React.FC = () => {
 	}, [isViewerSlotAvailable]);
 
 	const portString = useMemo(() => {
-		return `:${clientViewerPort}`;
+		return clientViewerPort === '' ? '' : `:${clientViewerPort}`;
 	}, [clientViewerPort]);
 	const roomPath = useMemo(() => {
 		return roomID !== '' ? `/${roomID}` : '';
 	}, [roomID]);
+	const usbMessage = usbNetwork
+		? `${t('usb-tether-network-detected')} ${usbNetwork.interfaceName} (${usbNetwork.ipAddress})`
+		: t('usb-tether-network-not-found');
 	const shareUrl = useMemo(() => {
 		if (!isViewerSlotAvailable) return '';
-		if (LOCAL_LAN_IP === '') return '';
+		if (connectionMode === 'lan' && LOCAL_LAN_IP === '') return '';
+		if (connectionMode === 'usb' && !usbNetwork) return '';
+		if (portString === '') return '';
 		if (roomPath === '') return '';
-		return `http://${LOCAL_LAN_IP}${portString}${roomPath}`;
-	}, [LOCAL_LAN_IP, portString, roomPath, isViewerSlotAvailable]);
+		const address =
+			connectionMode === 'usb' ? usbNetwork?.ipAddress : LOCAL_LAN_IP;
+		return `http://${address}${portString}${roomPath}`;
+	}, [
+		LOCAL_LAN_IP,
+		connectionMode,
+		isViewerSlotAvailable,
+		portString,
+		roomPath,
+		usbNetwork,
+	]);
 	const isQrInteractive = shareUrl !== '';
 	const connectionLimitTooltip = t('connection-limit-reached-tooltip');
 	const qrTooltipContent = isQrInteractive
 		? t('click-to-make-bigger')
-		: connectionLimitTooltip;
+		: connectionMode === 'usb'
+			? usbMessage
+			: connectionLimitTooltip;
 	const copyTooltipContent = isQrInteractive
 		? t('click-to-copy')
-		: connectionLimitTooltip;
+		: connectionMode === 'usb'
+			? usbMessage
+			: connectionLimitTooltip;
 
 	return (
 		<>
+			<div style={{ textAlign: 'center', marginBottom: '12px' }}>
+				<Text style={{ display: 'block', marginBottom: '8px' }}>
+					{t('choose-connection-mode')}
+				</Text>
+				<ButtonGroup>
+					<Button
+						active={connectionMode === 'lan'}
+						intent={connectionMode === 'lan' ? 'primary' : 'none'}
+						onClick={() => setConnectionMode('lan')}
+					>
+						{t('lan-wifi')}
+					</Button>
+					<Button
+						active={connectionMode === 'usb'}
+						intent={connectionMode === 'usb' ? 'primary' : 'none'}
+						onClick={() => setConnectionMode('usb')}
+					>
+						{t('android-usb')}
+					</Button>
+				</ButtonGroup>
+			</div>
+			{connectionMode === 'usb' && (
+				<Callout
+					intent={usbNetwork ? 'success' : 'warning'}
+					style={{ margin: '0 auto 12px', maxWidth: '620px' }}
+				>
+					{usbMessage}
+				</Callout>
+			)}
 			<div style={{ textAlign: 'center' }}>
 				<Text>
 					<span
@@ -190,9 +262,11 @@ const ScanQRStep: React.FC = () => {
 							borderRadius: '20px',
 						}}
 					>
-						{t(
-							'make-sure-your-computer-and-screen-viewing-device-are-connected-to-same-wi-fi',
-						)}
+						{connectionMode === 'lan'
+							? t(
+									'make-sure-your-computer-and-screen-viewing-device-are-connected-to-same-wi-fi',
+								)
+							: t('connect-android-device-with-usb-tethering')}
 					</span>
 				</Text>
 			</div>
@@ -274,7 +348,9 @@ const ScanQRStep: React.FC = () => {
 						? t(
 								'enter-the-following-address-in-browser-address-bar-on-any-device',
 							)
-						: t('one-viewing-client-is-connected-already')}
+						: connectionMode === 'usb'
+							? usbMessage
+							: t('one-viewing-client-is-connected-already')}
 				</Text>
 			</Row>
 
@@ -305,7 +381,7 @@ const ScanQRStep: React.FC = () => {
 					</span>
 				</Tooltip>
 			</Row>
-			{!isQrInteractive && (
+			{!isQrInteractive && !isViewerSlotAvailable && (
 				<>
 					<Row
 						style={{

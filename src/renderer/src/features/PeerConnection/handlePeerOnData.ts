@@ -2,15 +2,30 @@ import DesktopCapturerSourceType from '../../../../common/DesktopCapturerSourceT
 import getDesktopSourceStreamBySourceID from './getDesktopSourceStreamBySourceID';
 import prepareDataMessageToSendScreenSourceType from './prepareDataMessageToSendScreenSourceType';
 import NullSimplePeer from './NullSimplePeer';
+import { IpcEvents } from '../../../../common/IpcEvents.enum';
 
 export default async function handlePeerOnData(
 	peerConnection: PeerConnection,
 	data: string,
 ): Promise<void> {
-	const dataJSON = JSON.parse(data);
+	let dataJSON: { type?: string; payload?: Record<string, unknown> };
+	try {
+		dataJSON = JSON.parse(data.toString());
+	} catch (error) {
+		console.error('Ignored malformed peer data', error);
+		return;
+	}
+
+	if (dataJSON.type === 'remote_control_input') {
+		window.electron.ipcRenderer.send(
+			IpcEvents.RemoteControlInput,
+			dataJSON.payload,
+		);
+		return;
+	}
 
 	if (dataJSON.type === 'set_video_quality') {
-		const maxVideoQualityMultiplier = dataJSON.payload.value;
+		const maxVideoQualityMultiplier = dataJSON.payload?.value as number;
 		const minVideoQualityMultiplier =
 			maxVideoQualityMultiplier === 1 ? 0.5 : maxVideoQualityMultiplier;
 

@@ -8,6 +8,9 @@ import {
 	Alert,
 	H4,
 	DrawerSize,
+	Switch,
+	Alignment,
+	Tooltip,
 } from '@blueprintjs/core';
 import { Row, Col } from 'react-flexbox-grid';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
@@ -21,6 +24,9 @@ import { useTranslation } from 'react-i18next';
 
 type DeviceWithDesktopCapturerSourceId = Device & {
 	desktopCapturerSourceId: string;
+	remoteControlEnabled: boolean;
+	remoteControlSupported: boolean;
+	remoteControlReason?: string;
 };
 
 interface ConnectedDevicesListDrawerProps {
@@ -69,9 +75,17 @@ export default function ConnectedDevicesListDrawer(
 							IpcEvents.GetDesktopCapturerSourceIdBySharingSessionId,
 							device.sharingSessionID,
 						);
+						const remoteControlStatus =
+							await window.electron.ipcRenderer.invoke(
+								IpcEvents.GetRemoteControlStatus,
+								device.sharingSessionID,
+							);
 						devicesWithSourceIds.push({
 							...device,
 							desktopCapturerSourceId: sharingSourceId,
+							remoteControlEnabled: Boolean(remoteControlStatus?.enabled),
+							remoteControlSupported: Boolean(remoteControlStatus?.supported),
+							remoteControlReason: remoteControlStatus?.reason,
 						});
 					}
 					setConnectedDevices(devicesWithSourceIds);
@@ -124,6 +138,24 @@ export default function ConnectedDevicesListDrawer(
 		});
 		window.electron.ipcRenderer.invoke(IpcEvents.DisconnectAllDevices);
 	}, [connectedDevices]);
+
+	const handleRemoteControlToggle = useCallback(
+		async (device: DeviceWithDesktopCapturerSourceId) => {
+			const enabled = await window.electron.ipcRenderer.invoke(
+				IpcEvents.SetRemoteControlEnabled,
+				device.sharingSessionID,
+				!device.remoteControlEnabled,
+			);
+			setConnectedDevices((devices) =>
+				devices.map((candidate) =>
+					candidate.id === device.id
+						? { ...candidate, remoteControlEnabled: Boolean(enabled) }
+						: candidate,
+				),
+			);
+		},
+		[],
+	);
 
 	const hideOneDeviceInDevicesDisplayed = useCallback(
 		(id) => {
@@ -234,6 +266,22 @@ export default function ConnectedDevicesListDrawer(
 												</Col>
 											</Row>
 											<Row center="xs">
+												<Tooltip
+													content={
+														device.remoteControlReason ??
+														t('remote-control-description')
+													}
+													position={Position.TOP}
+												>
+													<Switch
+														checked={device.remoteControlEnabled}
+														disabled={!device.remoteControlSupported}
+														onChange={() => handleRemoteControlToggle(device)}
+														label={t('remote-control')}
+														alignIndicator={Alignment.RIGHT}
+														style={{ marginRight: '20px', marginBottom: 0 }}
+													/>
+												</Tooltip>
 												<Button
 													id={`disconnect-device-${device.deviceIP}`}
 													intent="danger"

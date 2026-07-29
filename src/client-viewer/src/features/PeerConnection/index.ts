@@ -28,6 +28,7 @@ import setAndShowErrorDialogMessage from './setAndShowErrorDialogMessage';
 import PeerConnectionSocketNotDefined from './errors/PeerConnectionSocketNotDefined';
 import PeerConnectionUserIsNotDefinedError from './errors/PeerConnectionUserIsNotDefinedError';
 import PeerConnectionPartnerIsNotDefinedError from './errors/PeerConnectionPartnerIsNotDefinedError';
+import type { RemoteControlInput } from '../../../../common/RemoteControl';
 
 export default class PeerConnection {
 	roomId: string;
@@ -59,6 +60,8 @@ export default class PeerConnection {
 	videoAutoQualityOptimizer: VideoAutoQualityOptimizer;
 
 	isStreamStarted: boolean = false;
+
+	isRemoteControlAllowed: boolean = false;
 
 	UIHandler: PeerConnectionUIHandler;
 
@@ -109,6 +112,22 @@ export default class PeerConnection {
 					VIDEO_QUALITY_TO_DECIMAL[this.videoQuality],
 				),
 			);
+		}
+	}
+
+	sendRemoteControlInput(input: RemoteControlInput): void {
+		if (!this.isRemoteControlAllowed || !this.peer || !this.peer.connected) {
+			return;
+		}
+		try {
+			this.peer.send(
+				JSON.stringify({
+					type: 'remote_control_input',
+					payload: input,
+				}),
+			);
+		} catch (error) {
+			console.error('Failed to send remote control input', error);
 		}
 	}
 

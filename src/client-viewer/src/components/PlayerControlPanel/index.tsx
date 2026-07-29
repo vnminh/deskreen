@@ -46,6 +46,9 @@ interface PlayerControlPanelProps {
 	setVideoQuality: (q: VideoQualityType) => void;
 	selectedVideoQuality: VideoQualityType;
 	screenSharingSourceType: ScreenSharingSourceType;
+	isRemoteControlAllowed: boolean;
+	isRemoteControlActive: boolean;
+	onRemoteControlToggle: () => void;
 	// toaster: undefined | HTMLDivElement;
 }
 
@@ -60,6 +63,9 @@ function PlayerControlPanel(props: PlayerControlPanelProps) {
 		selectedVideoQuality,
 		setVideoQuality,
 		screenSharingSourceType,
+		isRemoteControlAllowed,
+		isRemoteControlActive,
+		onRemoteControlToggle,
 	} = props;
 
 	const isFullScreenAPIAvailable = screenfull.isEnabled;
@@ -326,6 +332,35 @@ function PlayerControlPanel(props: PlayerControlPanelProps) {
 										</Button>
 									</Tooltip>
 								</Popover>
+								<Tooltip
+									content={
+										isRemoteControlAllowed
+											? isRemoteControlActive
+												? t('Stop controlling the shared screen')
+												: t('Control the shared screen')
+											: t('The host must allow remote control')
+									}
+									position={Position.BOTTOM}
+								>
+									<Button
+										minimal
+										icon="hand"
+										disabled={!isRemoteControlAllowed}
+										active={isRemoteControlActive}
+										onClick={onRemoteControlToggle}
+										style={{
+											color: 'white',
+											outline: 'none',
+											boxShadow: 'none',
+											borderRadius: '0',
+											padding: '0 20px',
+											backgroundColor: isRemoteControlActive
+												? 'rgba(255, 255, 255, 0.22)'
+												: 'transparent',
+										}}
+										aria-label={t('Remote control')}
+									/>
+								</Tooltip>
 								<Tooltip
 									content={t('Click to Enter Full Screen Mode')}
 									position={Position.BOTTOM}

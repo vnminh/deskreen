@@ -234,3 +234,83 @@ export default function getMyLocalIpV4(): string | undefined {
   // Return Wi-Fi IP if found, otherwise return fallback
   return wifiIp || localIp || fallbackIp;
 }
+
+const knownUsbTetherSubnets = [
+  "192.168.42.",
+  "192.168.43.",
+  "192.168.44.",
+  "192.168.137.",
+  "192.168.247.",
+  "172.20.10.",
+];
+
+const usbInterfaceNamePattern =
+  /(^usb|^enx|rndis|android|tether|mobile|remote ndis)/i;
+const nonPhysicalInterfaceNamePattern =
+  /(^tailscale|^tun|^tap|^wg|vpn|docker|veth|virbr|vbox|vmnet|bridge)/i;
+
+function isPrivateIpv4(address: string): boolean {
+  const parts = address.split(".").map(Number);
+  return (
+    parts.length === 4 &&
+    (parts[0] === 10 ||
+      (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+      (parts[0] === 192 && parts[1] === 168))
+  );
+}
+
+/**
+ * Resolve the host-side IPv4 address assigned by Android/iOS USB tethering.
+ * Interface names differ by OS, so known tether subnets are also recognized.
+ */
+export function getUsbTetherNetwork():
+  | { interfaceName: string; ipAddress: string }
+  | undefined {
+  const candidates: Array<{
+    interfaceName: string;
+    ipAddress: string;
+    score: number;
+  }> = [];
+  const activeNetwork = getActiveNetworkInterface();
+
+  Object.entries(os.networkInterfaces()).forEach(([interfaceName, networks]) => {
+    networks?.forEach((network) => {
+      if (network.internal || network.family !== "IPv4") return;
+      if (!isPrivateIpv4(network.address)) return;
+      if (
+        isWifiInterface(interfaceName) ||
+        isVirtualInterface(interfaceName, network.mac) ||
+        nonPhysicalInterfaceNamePattern.test(interfaceName)
+      ) {
+        return;
+      }
+
+      const hasUsbName = usbInterfaceNamePattern.test(interfaceName);
+      const hasKnownSubnet = knownUsbTetherSubnets.some((subnet) =>
+        network.address.startsWith(subnet),
+      );
+      if (
+        network.address === activeNetwork?.ipAddress &&
+        !hasUsbName &&
+        !hasKnownSubnet
+      ) {
+        return;
+      }
+      candidates.push({
+        interfaceName,
+        ipAddress: network.address,
+        score: (hasUsbName ? 2 : 0) + (hasKnownSubnet ? 3 : 0),
+      });
+    });
+  });
+
+  const explicitMatches = candidates.filter((candidate) => candidate.score > 0);
+  const match =
+    explicitMatches.sort((a, b) => b.score - a.score)[0] ??
+    (candidates.length === 1 ? candidates[0] : undefined);
+  if (!match) return undefined;
+  return {
+    interfaceName: match.interfaceName,
+    ipAddress: match.ipAddress,
+  };
+}

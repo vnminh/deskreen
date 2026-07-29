@@ -62,6 +62,10 @@ export default function handleCreatePeer(
 					handlePeerOnData(peerConnection, data);
 				});
 
+				peerConnection.peer.on('connect', () => {
+					peerConnection.sendRemoteControlPermission();
+				});
+
 				// ensure cleanup on peer end/error to prevent dangling helper window
 				peerConnection.peer.on('close', () => {
 					peerConnection.selfDestroy();

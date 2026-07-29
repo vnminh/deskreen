@@ -1,6 +1,5 @@
 import { join } from 'path';
 import { BrowserWindow } from 'electron';
-import { is } from '@electron-toolkit/utils';
 import { existsSync } from 'node:fs';
 
 type RendererHelperWebcontentsID = number;
@@ -30,7 +29,7 @@ export default class RendererWebrtcHelpersService {
 		let helperRendererWindow: BrowserWindow | null = null;
 
 		helperRendererWindow = new BrowserWindow({
-			show: is.dev, // show in dev only
+			show: false,
 			webPreferences: {
 				preload: this.resolvePreloadScriptPath('helperRenderer'),
 				// contextIsolation: true,
@@ -62,11 +61,6 @@ export default class RendererWebrtcHelpersService {
 		});
 
 		this.helpers.set(helperId, helperRendererWindow);
-
-		if (process.env.NODE_ENV === 'dev') {
-			helperRendererWindow.webContents.toggleDevTools();
-		}
-		// helperRendererWindow.webContents.toggleDevTools();
 
 		return helperRendererWindow;
 	}

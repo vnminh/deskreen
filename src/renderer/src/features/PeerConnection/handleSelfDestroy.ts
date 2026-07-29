@@ -5,6 +5,9 @@ import NullUser from './NullUser';
 export default function handleSelfDestroy(
 	peerConnection: PeerConnection,
 ): void {
+	window.electron.ipcRenderer.send(IpcEvents.RemoteControlInput, {
+		type: 'release_all',
+	});
 	peerConnection.partner = NullUser;
 	window.electron.ipcRenderer.invoke(
 		IpcEvents.DisconnectDeviceById,

@@ -70,10 +70,19 @@ export default (peerConnection: PeerConnection) => {
 	});
 
 	peerConnection.peer.on('data', (data) => {
-		const dataJSON = JSON.parse(data);
+		let dataJSON: {
+			type?: string;
+			payload?: { value?: string; enabled?: boolean };
+		};
+		try {
+			dataJSON = JSON.parse(data.toString());
+		} catch (error) {
+			console.error('Ignored malformed peer data', error);
+			return;
+		}
 
 		if (dataJSON.type === 'screen_sharing_source_type') {
-			peerConnection.screenSharingSourceType = dataJSON.payload.value;
+			peerConnection.screenSharingSourceType = dataJSON.payload?.value;
 			if (
 				peerConnection.screenSharingSourceType === ScreenSharingSource.SCREEN ||
 				peerConnection.screenSharingSourceType === ScreenSharingSource.WINDOW
@@ -82,6 +91,16 @@ export default (peerConnection: PeerConnection) => {
 					peerConnection.screenSharingSourceType,
 				);
 			}
+		}
+
+		if (
+			dataJSON.type === 'remote_control_permission' &&
+			typeof dataJSON.payload?.enabled === 'boolean'
+		) {
+			peerConnection.isRemoteControlAllowed = dataJSON.payload.enabled;
+			peerConnection.UIHandler.setRemoteControlAllowedCallback(
+				dataJSON.payload.enabled,
+			);
 		}
 	});
 };

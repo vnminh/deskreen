@@ -23,6 +23,7 @@ import handleDisplayingLoadingSharingIconLoop from './handleDisplayingLoadingSha
 import { ScreenSharingSource } from '../../features/PeerConnection/ScreenSharingSourceEnum';
 import ConnectionIcon from './ConnectionIconEnum';
 import { LoadingSharingIconEnum } from './LoadingSharingIconEnum';
+import type { RemoteControlInput } from '../../../../common/RemoteControl';
 
 function MainView() {
 	const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
@@ -50,6 +51,8 @@ function MainView() {
 		VideoQuality.Q_100_PERCENT,
 	);
 	const [peer, setPeer] = useState<undefined | PeerConnection>();
+	const [isRemoteControlAllowed, setRemoteControlAllowed] = useState(false);
+	const [isRemoteControlActive, setIsRemoteControlActive] = useState(false);
 	const [connectionRoomId, setConnectionRoomId] = useState<string>('');
 
 	useEffect(() => {
@@ -83,6 +86,7 @@ function MainView() {
 			setIsShownTextPrompt,
 			setPromptStep,
 			setScreenSharingSourceType,
+			setRemoteControlAllowed,
 			setDialogErrorMessage,
 			setIsErrorDialogOpen,
 			setUrl,
@@ -94,6 +98,18 @@ function MainView() {
 	const handlePlayPause = useCallback(() => {
 		setPlaying(!playing);
 	}, [playing]);
+	const sendRemoteControlInput = useCallback(
+		(input: RemoteControlInput) => {
+			peer?.sendRemoteControlInput(input);
+		},
+		[peer],
+	);
+
+	useEffect(() => {
+		if (!isRemoteControlAllowed) {
+			setIsRemoteControlActive(false);
+		}
+	}, [isRemoteControlAllowed]);
 
 	useEffect(handleRemoveDanglingReactRevealContainer(url), [url]);
 
@@ -129,6 +145,10 @@ function MainView() {
 				setPlaying={setPlaying}
 				setVideoQuality={setVideoQuality}
 				videoQuality={videoQuality}
+				isRemoteControlAllowed={isRemoteControlAllowed}
+				isRemoteControlActive={isRemoteControlActive}
+				setIsRemoteControlActive={setIsRemoteControlActive}
+				sendRemoteControlInput={sendRemoteControlInput}
 			/>
 			<ErrorDialog
 				errorMessage={dialogErrorMessage}

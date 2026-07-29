@@ -13,6 +13,7 @@ export default (params: CreatePeerConnectionUseEffectParams) => {
 		setIsShownTextPrompt,
 		setPromptStep,
 		setScreenSharingSourceType,
+		setRemoteControlAllowed,
 		setDialogErrorMessage,
 		setIsErrorDialogOpen,
 		setUrl,
@@ -41,6 +42,7 @@ export default (params: CreatePeerConnectionUseEffectParams) => {
 					}, 2000);
 				},
 				setScreenSharingSourceType,
+				setRemoteControlAllowed,
 				changeLanguage,
 				setDialogErrorMessage,
 				setIsErrorDialogOpen,

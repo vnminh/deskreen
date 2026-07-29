@@ -48,6 +48,7 @@ export default class PeerConnection {
 	onDeviceConnectedCallback: (device: Device) => void;
 	displayID: string;
 	sourceDisplaySize: DisplaySize | undefined;
+	remoteControlEnabled: boolean;
 	beforeunloadHandler: (() => void) | null = null;
 
 	constructor(
@@ -68,6 +69,7 @@ export default class PeerConnection {
 		this.localStream = null;
 		this.displayID = '';
 		this.sourceDisplaySize = undefined;
+		this.remoteControlEnabled = false;
 		this.onDeviceConnectedCallback = () => {
 			// noop until UI layer registers callback
 		};
@@ -217,6 +219,25 @@ export default class PeerConnection {
 
 	setOnDeviceConnectedCallback(callback: (device: Device) => void): void {
 		this.onDeviceConnectedCallback = callback;
+	}
+
+	setRemoteControlEnabled(enabled: boolean): void {
+		this.remoteControlEnabled = enabled;
+		this.sendRemoteControlPermission();
+	}
+
+	sendRemoteControlPermission(): void {
+		if (this.peer === NullSimplePeer || !this.peer.connected) return;
+		try {
+			this.peer.send(
+				JSON.stringify({
+					type: 'remote_control_permission',
+					payload: { enabled: this.remoteControlEnabled },
+				}),
+			);
+		} catch (error) {
+			console.error('Failed to send remote control permission', error);
+		}
 	}
 
 	async denyConnectionForPartner(): Promise<void> {

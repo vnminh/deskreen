@@ -10,6 +10,8 @@ export default class PeerConnectionUIHandler {
 
 	setScreenSharingSourceTypeCallback: (s: ScreenSharingSourceType) => void;
 
+	setRemoteControlAllowedCallback: (allowed: boolean) => void;
+
 	setAppLanguageCallback: (newLang: string) => void;
 
 	setDialogErrorMessageCallback: (message: ErrorMessageType) => void;
@@ -22,6 +24,7 @@ export default class PeerConnectionUIHandler {
 		setMyDeviceDetails: (details: DeviceDetails) => void,
 		hostAllowedToConnectCallback: () => void,
 		setScreenSharingSourceTypeCallback: (s: ScreenSharingSourceType) => void,
+		setRemoteControlAllowedCallback: (allowed: boolean) => void,
 		setAppLanguageCallback: (newLang: string) => void,
 		setDialogErrorMessageCallback: (message: ErrorMessageType) => void,
 		setIsErrorDialogOpen: (val: boolean) => void,
@@ -30,6 +33,7 @@ export default class PeerConnectionUIHandler {
 		this.setMyDeviceDetails = setMyDeviceDetails;
 		this.setScreenSharingSourceTypeCallback =
 			setScreenSharingSourceTypeCallback;
+		this.setRemoteControlAllowedCallback = setRemoteControlAllowedCallback;
 		this.setAppLanguageCallback = setAppLanguageCallback;
 		this.setDialogErrorMessageCallback = setDialogErrorMessageCallback;
 		this.setIsErrorDialogOpen = setIsErrorDialogOpen;

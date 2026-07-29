@@ -100,6 +100,13 @@ export function handleIpcRenderer(): void {
 				peerConnection.notifyClientWithNewLanguage();
 			}
 		});
+
+		window.electron.ipcRenderer.on(
+			'set-remote-control-enabled',
+			(_, enabled: boolean) => {
+				peerConnection?.setRemoteControlEnabled(enabled);
+			},
+		);
 	});
 }
 

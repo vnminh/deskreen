@@ -23,8 +23,22 @@ import { store } from '../../common/deskreen-electron-store';
 import DesktopCapturerSourceType from '../../common/DesktopCapturerSourceType';
 import isLinuxWaylandSession from '../utils/isLinuxWaylandSession';
 import { checkScreenRecordingPermission } from './checkScreenRecordingPermission';
+import RemoteControlService from '../services/RemoteControlService';
+import type { RemoteControlInput } from '../../common/RemoteControl';
+import { getUsbTetherNetwork } from './getMyLocalIpV4';
 
 export const initIpcMainHandlers = (mainWindow: BrowserWindow): void => {
+	const remoteControlService = new RemoteControlService();
+
+	const getSharingSessionForWebContentsId = (webContentsId: number) => {
+		return [
+			...getDeskreenGlobal().sharingSessionService.sharingSessions.values(),
+		].find(
+			(session) =>
+				session.peerConnectionHelperRenderer?.webContents.id === webContentsId,
+		);
+	};
+
 	ipcMain.on('client-changed-language', async (_, newLangCode) => {
 		i18n.changeLanguage(newLangCode);
 		if (store.has(ElectronStoreKeys.AppLanguage)) {
@@ -479,6 +493,108 @@ export const initIpcMainHandlers = (mainWindow: BrowserWindow): void => {
 	ipcMain.handle(IpcEvents.RelaunchApp, () => {
 		app.relaunch();
 		app.exit(0);
+	});
+
+	ipcMain.handle(
+		IpcEvents.GetRemoteControlStatus,
+		(event, sharingSessionId: string) => {
+			if (event.sender.id !== mainWindow.webContents.id) {
+				return { enabled: false, supported: false };
+			}
+			const session =
+				getDeskreenGlobal().sharingSessionService.sharingSessions.get(
+					sharingSessionId,
+				);
+			const isEntireScreen =
+				session?.desktopCapturerSourceID.includes(
+					DesktopCapturerSourceType.SCREEN,
+				) ?? false;
+			const supported =
+				Boolean(session) && isEntireScreen && !isLinuxWaylandSession;
+
+			return {
+				enabled: supported && Boolean(session?.remoteControlEnabled),
+				supported,
+				reason: isLinuxWaylandSession
+					? 'Remote control is not available in a Wayland session.'
+					: !isEntireScreen
+						? 'Remote control requires sharing an entire screen.'
+						: undefined,
+			};
+		},
+	);
+
+	ipcMain.handle(
+		IpcEvents.SetRemoteControlEnabled,
+		(event, sharingSessionId: string, enabled: boolean) => {
+			if (
+				event.sender.id !== mainWindow.webContents.id ||
+				typeof enabled !== 'boolean'
+			) {
+				return false;
+			}
+
+			const session =
+				getDeskreenGlobal().sharingSessionService.sharingSessions.get(
+					sharingSessionId,
+				);
+			const supported =
+				Boolean(session) &&
+				!isLinuxWaylandSession &&
+				Boolean(
+					session?.desktopCapturerSourceID.includes(
+						DesktopCapturerSourceType.SCREEN,
+					),
+				);
+			if (!session || (enabled && !supported)) return false;
+
+			const helperId = session.peerConnectionHelperRenderer?.webContents.id;
+			session.setRemoteControlEnabled(enabled);
+			if (!enabled && helperId !== undefined) {
+				remoteControlService.releaseSession(helperId);
+			}
+			return session.remoteControlEnabled;
+		},
+	);
+
+	ipcMain.on(
+		IpcEvents.RemoteControlInput,
+		(event, input: RemoteControlInput) => {
+			const session = getSharingSessionForWebContentsId(event.sender.id);
+			if (!session) return;
+
+			if (input?.type === 'release_all') {
+				remoteControlService.releaseSession(event.sender.id);
+				return;
+			}
+
+			if (
+				!session.remoteControlEnabled ||
+				session.status !== SharingSessionStatusEnum.SHARING ||
+				isLinuxWaylandSession ||
+				!session.desktopCapturerSourceID.includes(
+					DesktopCapturerSourceType.SCREEN,
+				)
+			) {
+				return;
+			}
+
+			const displayId =
+				getDeskreenGlobal().desktopCapturerSourcesService.getSourceDisplayIDByDisplayCapturerSourceID(
+					session.desktopCapturerSourceID,
+				);
+			const display = screen
+				.getAllDisplays()
+				.find((candidate) => `${candidate.id}` === displayId);
+			if (!display) return;
+
+			remoteControlService.handleInput(event.sender.id, display, input);
+		},
+	);
+
+	ipcMain.handle(IpcEvents.GetUsbTetherNetwork, (event) => {
+		if (event.sender.id !== mainWindow.webContents.id) return undefined;
+		return getUsbTetherNetwork();
 	});
 
 	void createWaitingForConnectionSharingSession();
