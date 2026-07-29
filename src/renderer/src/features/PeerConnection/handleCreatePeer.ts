@@ -8,6 +8,11 @@ export default function handleCreatePeer(
 	peerConnection: PeerConnection,
 ): Promise<void> {
 	return new Promise((resolve, reject) => {
+		if (peerConnection.fastControlChannel) {
+			peerConnection.fastControlChannel.close();
+			peerConnection.fastControlChannel = null;
+		}
+
 		// cleanup existing peer before creating new one
 		if (peerConnection.peer !== NullSimplePeer) {
 			try {
@@ -63,7 +68,26 @@ export default function handleCreatePeer(
 				});
 
 				peerConnection.peer.on('connect', () => {
+					const rtcPeer = (
+						peerConnection.peer as unknown as { _pc?: RTCPeerConnection }
+					)._pc;
+					if (rtcPeer) {
+						const channel = rtcPeer.createDataChannel('deskreen-pointer-fast', {
+							ordered: false,
+							maxRetransmits: 0,
+						});
+						peerConnection.fastControlChannel = channel;
+						channel.onmessage = (event) => {
+							void handlePeerOnData(peerConnection, String(event.data));
+						};
+						channel.onclose = () => {
+							if (peerConnection.fastControlChannel === channel) {
+								peerConnection.fastControlChannel = null;
+							}
+						};
+					}
 					peerConnection.sendRemoteControlPermission();
+					void peerConnection.updateVideoLatencyPreference();
 				});
 
 				// ensure cleanup on peer end/error to prevent dangling helper window

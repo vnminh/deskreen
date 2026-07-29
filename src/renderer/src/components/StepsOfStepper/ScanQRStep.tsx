@@ -66,11 +66,8 @@ const ScanQRStep: React.FC = () => {
 	const [roomID, setRoomID] = useState('');
 	const [LOCAL_LAN_IP, setLocalLanIP] = useState('');
 	const [isQRCodeMagnified, setIsQRCodeMagnified] = useState(false);
-	const [connectionMode, setConnectionMode] =
-		useState<ConnectionMode>('lan');
-	const [usbNetwork, setUsbNetwork] = useState<
-		UsbTetherNetwork | undefined
-	>();
+	const [connectionMode, setConnectionMode] = useState<ConnectionMode>('lan');
+	const [usbNetwork, setUsbNetwork] = useState<UsbTetherNetwork | undefined>();
 
 	useEffect(() => {
 		window.electron.ipcRenderer
@@ -251,15 +248,18 @@ const ScanQRStep: React.FC = () => {
 					{usbMessage}
 				</Callout>
 			)}
-			<div style={{ textAlign: 'center' }}>
+			<div style={{ textAlign: 'center', marginBottom: '4px' }}>
 				<Text>
 					<span
 						style={{
-							backgroundColor: '#00f99273',
-							fontWeight: 900,
-							paddingRight: '8px',
-							paddingLeft: '8px',
-							borderRadius: '20px',
+							display: 'inline-block',
+							maxWidth: '680px',
+							padding: '5px 12px',
+							color: '#0b6e4f',
+							backgroundColor: '#e1f8ed',
+							border: '1px solid #b7ebd2',
+							borderRadius: '999px',
+							fontWeight: 600,
 						}}
 					>
 						{connectionMode === 'lan'

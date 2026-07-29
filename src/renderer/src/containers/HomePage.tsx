@@ -62,19 +62,43 @@ export default function HomePage(): React.ReactElement {
 			autoDismissTimeout={5000}
 			components={{ Toast: CustomToastWithTheme }}
 		>
-			<div className={Classes.TREE}>
+			<div
+				className={Classes.TREE}
+				style={{
+					minHeight: '100vh',
+					overflowY: 'auto',
+					paddingBottom: '28px',
+					boxSizing: 'border-box',
+					background:
+						'radial-gradient(circle at top left, rgba(19, 185, 138, 0.12), transparent 36%), radial-gradient(circle at top right, rgba(13, 139, 217, 0.15), transparent 34%), #f5f8fa',
+				}}
+			>
 				<TopPanel handleReset={handleResetWithSharingSessionRestart} />
-				<DeskreenStepper
-					activeStep={activeStep}
-					setActiveStep={setActiveStep}
-					isAllowDeviceAlertOpen={isAllowDeviceAlertOpen}
-					setIsAllowDeviceAlertOpen={setIsAllowDeviceAlertOpen}
-					isUserAllowedConnection={isUserAllowedConnection}
-					setIsUserAllowedConnection={setIsUserAllowedConnection}
-					pendingConnectionDevice={pendingConnectionDevice}
-					setPendingConnectionDevice={setPendingConnectionDevice}
-					handleReset={handleResetWithSharingSessionRestart}
-				/>
+				<main
+					style={{
+						width: 'calc(100% - 32px)',
+						maxWidth: '1120px',
+						margin: '0 auto',
+						padding: '4px 18px 24px',
+						boxSizing: 'border-box',
+						background: 'rgba(255, 255, 255, 0.78)',
+						border: '1px solid rgba(16, 107, 163, 0.1)',
+						borderRadius: '22px',
+						boxShadow: '0 18px 48px rgba(41, 55, 66, 0.08)',
+					}}
+				>
+					<DeskreenStepper
+						activeStep={activeStep}
+						setActiveStep={setActiveStep}
+						isAllowDeviceAlertOpen={isAllowDeviceAlertOpen}
+						setIsAllowDeviceAlertOpen={setIsAllowDeviceAlertOpen}
+						isUserAllowedConnection={isUserAllowedConnection}
+						setIsUserAllowedConnection={setIsUserAllowedConnection}
+						pendingConnectionDevice={pendingConnectionDevice}
+						setPendingConnectionDevice={setPendingConnectionDevice}
+						handleReset={handleResetWithSharingSessionRestart}
+					/>
+				</main>
 				<ScreenRecordingPermissionModal isOpen={!hasScreenPermission} />
 			</div>
 		</ToastProvider>

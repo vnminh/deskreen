@@ -49,6 +49,7 @@ export default class PeerConnection {
 	displayID: string;
 	sourceDisplaySize: DisplaySize | undefined;
 	remoteControlEnabled: boolean;
+	fastControlChannel: RTCDataChannel | null;
 	beforeunloadHandler: (() => void) | null = null;
 
 	constructor(
@@ -70,6 +71,7 @@ export default class PeerConnection {
 		this.displayID = '';
 		this.sourceDisplaySize = undefined;
 		this.remoteControlEnabled = false;
+		this.fastControlChannel = null;
 		this.onDeviceConnectedCallback = () => {
 			// noop until UI layer registers callback
 		};
@@ -215,6 +217,9 @@ export default class PeerConnection {
 				setDisplaySizeFromLocalStream(this);
 			}
 		}
+		if (this.remoteControlEnabled) {
+			await this.updateVideoLatencyPreference();
+		}
 	}
 
 	setOnDeviceConnectedCallback(callback: (device: Device) => void): void {
@@ -224,6 +229,39 @@ export default class PeerConnection {
 	setRemoteControlEnabled(enabled: boolean): void {
 		this.remoteControlEnabled = enabled;
 		this.sendRemoteControlPermission();
+		void this.updateVideoLatencyPreference();
+	}
+
+	async updateVideoLatencyPreference(): Promise<void> {
+		const videoTrack = this.localStream?.getVideoTracks()[0];
+		if (videoTrack) {
+			videoTrack.contentHint = this.remoteControlEnabled ? 'motion' : 'detail';
+		}
+
+		if (this.peer === NullSimplePeer) return;
+		const rtcPeer = (this.peer as unknown as { _pc?: RTCPeerConnection })._pc;
+		const sender = rtcPeer
+			?.getSenders()
+			.find((candidate) => candidate.track?.kind === 'video');
+		if (!sender) return;
+
+		try {
+			const parameters = sender.getParameters() as RTCRtpSendParameters & {
+				degradationPreference?: string;
+			};
+			parameters.degradationPreference = this.remoteControlEnabled
+				? 'maintain-framerate'
+				: 'balanced';
+			if (!parameters.encodings?.length) return;
+			if (this.remoteControlEnabled) {
+				parameters.encodings[0].maxFramerate = 60;
+			} else {
+				delete parameters.encodings[0].maxFramerate;
+			}
+			await sender.setParameters(parameters);
+		} catch (error) {
+			console.warn('Unable to tune video for remote control latency', error);
+		}
 	}
 
 	sendRemoteControlPermission(): void {

@@ -23,6 +23,11 @@ export default function handleSelfDestroy(
 		peerConnection.beforeunloadHandler = null;
 	}
 
+	if (peerConnection.fastControlChannel) {
+		peerConnection.fastControlChannel.close();
+		peerConnection.fastControlChannel = null;
+	}
+
 	// cleanup peer connection and remove all event listeners
 	if (peerConnection.peer !== NullSimplePeer) {
 		try {

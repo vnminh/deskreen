@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
 	Overlay2,
 	Classes,
@@ -8,7 +8,6 @@ import {
 	Icon,
 	Text,
 	TabsExpander,
-	Callout,
 } from '@blueprintjs/core';
 import { Col, Row } from 'react-flexbox-grid';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
@@ -31,9 +30,7 @@ type SettingsOverlayClassKey =
 	| 'overlayInsideFade'
 	| 'absoluteCloseButton'
 	| 'tabNavigationRowButton'
-	| 'iconInTablLeftButton'
-	| 'updateCalloutWrapper'
-	| 'updateCallout';
+	| 'iconInTablLeftButton';
 
 type SettingsOverlayClassMap = Record<SettingsOverlayClassKey, string>;
 
@@ -52,22 +49,6 @@ const useStyles = makeStyles(() =>
 			borderRadius: '100px',
 		},
 		iconInTablLeftButton: { marginRight: '5px' },
-		updateCalloutWrapper: {
-			display: 'flex',
-			justifyContent: 'center',
-			marginBottom: '16px',
-			width: '100%',
-		},
-		updateCallout: {
-			cursor: 'pointer',
-			boxShadow: 'none',
-			display: 'inline-flex',
-			flexDirection: 'column',
-			gap: '4px',
-			width: 'auto',
-			maxWidth: '420px',
-			borderRadius: '8px',
-		},
 	}),
 );
 
@@ -77,29 +58,11 @@ export default function SettingsOverlay(
 	const [clientViewerPort, setClientViewerPort] = useState('80'); // Default port, can be changed later
 
 	const { handleClose, isSettingsOpen } = props;
-	const [latestVersion, setLatestVersion] = useState('');
 	const [currentVersion, setCurrentVersion] = useState('');
 
 	const { t } = useTranslation();
 
 	const classes = useStyles() as SettingsOverlayClassMap;
-
-	const handleOpenDownload = useCallback((): void => {
-		void window.electron.ipcRenderer.invoke(
-			IpcEvents.OpenExternalLink,
-			'https://deskreen.com/download',
-		);
-	}, []);
-
-	const handleUpdateCalloutKeyDown = useCallback(
-		(event: React.KeyboardEvent<HTMLDivElement>): void => {
-			if (event.key === 'Enter' || event.key === ' ') {
-				event.preventDefault();
-				handleOpenDownload();
-			}
-		},
-		[handleOpenDownload],
-	);
 
 	useEffect(() => {
 		window.electron.ipcRenderer
@@ -120,52 +83,19 @@ export default function SettingsOverlay(
 	}, [handleClose]);
 
 	useEffect(() => {
-		const getLatestVersion = async (): Promise<void> => {
-			const gotLatestVersion =
-				await window.electron.ipcRenderer.invoke('get-latest-version');
-			if (gotLatestVersion !== '') {
-				setLatestVersion(gotLatestVersion);
-			}
-		};
-		getLatestVersion();
-		const getCurrentVersion = async (): Promise<void> => {
-			const gotCurrentVersion = await window.electron.ipcRenderer.invoke(
-				'get-current-version',
-			);
-			if (gotCurrentVersion !== '') {
-				setCurrentVersion(gotCurrentVersion);
-			}
-		};
-		getCurrentVersion();
+		window.electron.ipcRenderer
+			.invoke('get-current-version')
+			.then((version) => {
+				if (typeof version === 'string') setCurrentVersion(version);
+			})
+			.catch((error) => {
+				console.error('Error getting current version:', error);
+			});
 	}, []);
-
-	const hasUpdate =
-		latestVersion !== '' &&
-		currentVersion !== '' &&
-		latestVersion !== currentVersion;
 
 	const GeneralSettingsPanel: React.FC = () => {
 		return (
 			<div style={{ width: '100%' }}>
-				{hasUpdate ? (
-					<div className={classes.updateCalloutWrapper}>
-						<Callout
-							className={classes.updateCallout}
-							icon="automatic-updates"
-							intent="success"
-							role="button"
-							tabIndex={0}
-							onClick={handleOpenDownload}
-							onKeyDown={handleUpdateCalloutKeyDown}
-						>
-							<Text style={{ fontWeight: 600 }}>
-								{t('deskreen-ce-update-is-available')}
-							</Text>
-							<Text>{`${t('your-current-version-is')} ${currentVersion}`}</Text>
-							<Text>{`${t('click-to-download-new-updated-version')} ${latestVersion}`}</Text>
-						</Callout>
-					</div>
-				) : null}
 				<Row middle="xs">
 					<H3 className="bp3-text-muted">{t('general-settings')}</H3>
 				</Row>
@@ -200,7 +130,7 @@ export default function SettingsOverlay(
 							<H3>{t('about-deskreen')}</H3>
 						</Col>
 						<Col xs={12}>
-							<Text>{`${t('version')}: ${currentVersion} (${currentVersion})`}</Text>
+							<Text>{`${t('version')}: ${currentVersion}`}</Text>
 						</Col>
 						<Col xs={12}>
 							<Text>

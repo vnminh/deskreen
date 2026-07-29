@@ -80,10 +80,13 @@ export default function IntermediateStep(
 			style={{
 				display: 'flex',
 				flexDirection: 'column',
-				justifyContent: 'center',
+				justifyContent: 'flex-start',
 				alignItems: 'center',
-				height: '260px',
+				minHeight: activeStep === 0 ? '410px' : '300px',
+				height: 'auto',
 				width: '100%',
+				padding: '10px 12px 24px',
+				boxSizing: 'border-box',
 			}}
 		>
 			{getStepContent(

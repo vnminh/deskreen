@@ -1,126 +1,177 @@
-.play-pause-text {
-	width: max-content;
-}
-
-.play-pause-button,
-.play-pause-button:focus,
-.play-pause-button:active {
-	border: none !important;
-	outline: none !important;
-	overflow: hidden !important;
-}
-
-.play-pause-button:hover {
-	border: none !important;
-	outline: none !important;
-	background: rgba(255, 255, 255, 0.1) !important;
-	overflow: hidden !important;
-}
-
-.play-pause-button::before,
-.play-pause-button::after {
-	display: none !important;
-}
-
-.play-pause-button {
-	display: flex !important;
-	flex-direction: row !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 120px !important;
-	min-width: 120px !important;
-	max-width: 120px !important;
-}
-
-.play-pause-button-glow {
-	box-shadow: 0 0 20px rgba(19, 124, 189, 0.8), 0 0 40px rgba(19, 124, 189, 0.6) !important;
-}
-
-.play-pause-button .bp3-button-text {
-	display: flex !important;
-	flex-direction: row !important;
-	align-items: center !important;
-	justify-content: center !important;
-	border: none !important;
-	outline: none !important;
+.viewer-control-panel {
+	position: relative;
+	z-index: 5;
 	margin: 0 !important;
+	padding: 10px 16px !important;
+	color: #f5f8fa;
+	background: linear-gradient(135deg, #121b2d 0%, #172a3c 100%) !important;
+	border: 0 !important;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+	border-radius: 0 !important;
+	box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28) !important;
 }
 
-.bp3-button-group {
-	border: none !important;
-	overflow: visible !important;
+.viewer-toolbar {
+	display: grid;
+	grid-template-columns: minmax(190px, 1fr) auto minmax(190px, 1fr);
+	align-items: center;
+	gap: 18px;
+	max-width: 1440px;
+	min-height: 48px;
+	margin: 0 auto;
 }
 
-.bp3-button-group .bp3-button {
-	position: relative !important;
+.viewer-brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	text-align: left;
 }
 
-.settings-button-separator {
-	border: none !important;
-	position: relative !important;
+.viewer-brand-logo {
+	width: 38px;
+	height: 38px;
+	flex-shrink: 0;
+	border-radius: 11px;
+	box-shadow: 0 6px 18px rgba(19, 124, 189, 0.32);
 }
 
-.settings-button-separator::before {
-	content: '' !important;
-	position: absolute !important;
-	left: 0 !important;
-	top: 25% !important;
-	bottom: 25% !important;
-	width: 1px !important;
-	background-color: rgba(255, 255, 255, 0.5) !important;
-	z-index: 10 !important;
-	pointer-events: none !important;
+.viewer-brand-copy {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
 }
 
-.settings-button-separator::after {
-	content: '' !important;
-	position: absolute !important;
-	right: 0 !important;
-	top: 25% !important;
-	bottom: 25% !important;
-	width: 1px !important;
-	background-color: rgba(255, 255, 255, 0.5) !important;
-	z-index: 10 !important;
-	pointer-events: none !important;
+.viewer-brand-title {
+	color: #ffffff !important;
+	font-size: 15px;
+	font-weight: 700;
+	line-height: 1.2;
 }
 
-.bp3-button-group .bp3-button:not(.play-pause-button) {
+.viewer-brand-subtitle {
+	margin-top: 2px;
+	color: #9bb2c5 !important;
+	font-size: 11px;
+}
+
+.viewer-control-group {
+	display: flex !important;
+	height: 42px;
+	overflow: hidden;
+	background: rgba(255, 255, 255, 0.07);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 13px;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.viewer-control-group .viewer-control-button {
+	min-width: 44px;
+	height: 40px;
+	color: #e8f1f7 !important;
+	border: 0 !important;
+	border-radius: 0 !important;
 	box-shadow: none !important;
 }
 
-.bp3-button-group .bp3-button:not(.play-pause-button):hover {
-	box-shadow: none !important;
+.viewer-control-group .viewer-control-button:hover {
+	background: rgba(255, 255, 255, 0.12) !important;
 }
 
-.bp3-button-group .bp3-button:first-child {
-	border-left: none !important;
-	border-top-left-radius: 20px !important;
-	border-bottom-left-radius: 20px !important;
-	padding-left: 20px !important;
+.viewer-control-group .viewer-play-button {
+	min-width: 105px;
+	padding: 0 16px;
+	background: linear-gradient(135deg, #0d8bd9, #137cbd) !important;
 }
 
-.bp3-button-group .bp3-button:last-child {
-	border-top-right-radius: 20px !important;
-	border-bottom-right-radius: 20px !important;
-	padding-right: 20px !important;
+.viewer-control-label {
+	margin-left: 4px;
+	font-weight: 600;
 }
 
-.bp3-button-group .bp3-button:hover,
-.bp3-button-group .bp3-button:focus,
-.bp3-button-group .bp3-button:active {
-	overflow: hidden !important;
+.viewer-control-group .viewer-remote-button.is-active {
+	color: #ffffff !important;
+	background: linear-gradient(135deg, #0f9960, #13b98a) !important;
 }
 
-.bp3-button-group .bp3-button:first-child:hover,
-.bp3-button-group .bp3-button:first-child:focus,
-.bp3-button-group .bp3-button:first-child:active {
-	border-top-left-radius: 20px !important;
-	border-bottom-left-radius: 20px !important;
+.viewer-control-group .viewer-control-button:disabled {
+	color: #738694 !important;
+	background: transparent !important;
 }
 
-.bp3-button-group .bp3-button:last-child:hover,
-.bp3-button-group .bp3-button:last-child:focus,
-.bp3-button-group .bp3-button:last-child:active {
-	border-top-right-radius: 20px !important;
-	border-bottom-right-radius: 20px !important;
+.viewer-fullscreen-icon {
+	filter: brightness(0) invert(1);
+}
+
+.viewer-player-switch {
+	justify-self: end;
+	margin: 0 !important;
+	color: #c5d5e0 !important;
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.viewer-quality-menu {
+	display: flex;
+	min-width: 170px;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.viewer-quality-menu h5 {
+	margin: 2px 4px 8px;
+}
+
+.viewer-quality-menu .bp3-button {
+	justify-content: center;
+}
+
+@media (max-width: 860px) {
+	.viewer-toolbar {
+		grid-template-columns: auto 1fr auto;
+		gap: 10px;
+	}
+
+	.viewer-brand-copy {
+		display: none;
+	}
+
+	.viewer-player-switch .bp3-control-indicator {
+		margin-left: 0;
+	}
+
+	.viewer-player-switch {
+		font-size: 0;
+	}
+}
+
+@media (max-width: 560px) {
+	.viewer-control-panel {
+		padding: 8px !important;
+	}
+
+	.viewer-toolbar {
+		grid-template-columns: 36px minmax(0, 1fr);
+		gap: 8px;
+	}
+
+	.viewer-brand-logo {
+		width: 34px;
+		height: 34px;
+	}
+
+	.viewer-control-group {
+		justify-self: end;
+	}
+
+	.viewer-control-group .viewer-play-button {
+		min-width: 44px;
+		padding: 0 12px;
+	}
+
+	.viewer-control-label,
+	.viewer-player-switch {
+		display: none;
+	}
 }

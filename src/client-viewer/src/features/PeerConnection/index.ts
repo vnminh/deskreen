@@ -63,6 +63,8 @@ export default class PeerConnection {
 
 	isRemoteControlAllowed: boolean = false;
 
+	fastControlChannel: RTCDataChannel | null = null;
+
 	UIHandler: PeerConnectionUIHandler;
 
 	beforeunloadHandler: (() => void) | null = null;
@@ -120,18 +122,31 @@ export default class PeerConnection {
 			return;
 		}
 		try {
-			this.peer.send(
-				JSON.stringify({
-					type: 'remote_control_input',
-					payload: input,
-				}),
-			);
+			const message = JSON.stringify({
+				type: 'remote_control_input',
+				payload: input,
+			});
+			if (
+				input.type === 'pointer_move' &&
+				this.fastControlChannel?.readyState === 'open'
+			) {
+				this.fastControlChannel.send(message);
+				return;
+			}
+			this.peer.send(message);
 		} catch (error) {
 			console.error('Failed to send remote control input', error);
 		}
 	}
 
+	closeFastControlChannel(): void {
+		if (!this.fastControlChannel) return;
+		this.fastControlChannel.close();
+		this.fastControlChannel = null;
+	}
+
 	stopStream() {
+		this.closeFastControlChannel();
 		// stop the video stream by clearing the stream URL
 		this.setUrlCallback(null);
 		this.isStreamStarted = false;
@@ -149,6 +164,7 @@ export default class PeerConnection {
 	}
 
 	destroy() {
+		this.closeFastControlChannel();
 		// remove window event listener
 		if (this.beforeunloadHandler) {
 			window.removeEventListener('beforeunload', this.beforeunloadHandler);
@@ -199,6 +215,7 @@ export default class PeerConnection {
 	}
 
 	createPeer() {
+		this.closeFastControlChannel();
 		// cleanup existing peer before creating new one
 		if (this.peer) {
 			try {
@@ -226,6 +243,17 @@ export default class PeerConnection {
 		});
 
 		this.peer = peer;
+		const rtcPeer = (peer as unknown as { _pc?: RTCPeerConnection })._pc;
+		rtcPeer?.addEventListener('datachannel', (event) => {
+			if (event.channel.label !== 'deskreen-pointer-fast') return;
+			this.closeFastControlChannel();
+			this.fastControlChannel = event.channel;
+			event.channel.onclose = () => {
+				if (this.fastControlChannel === event.channel) {
+					this.fastControlChannel = null;
+				}
+			};
+		});
 		this.peer.on('error', (e) => {
 			console.error('error in simple peer happened!');
 			console.error(e);

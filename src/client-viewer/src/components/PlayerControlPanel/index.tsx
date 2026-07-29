@@ -1,25 +1,22 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
 	Alignment,
 	Button,
 	ButtonGroup,
 	Card,
-	H5,
-	Switch,
-	Divider,
-	Text,
-	Icon,
-	Tooltip,
-	Position,
-	Popover,
 	Classes,
-	H3,
+	Divider,
+	H5,
+	Popover,
+	Position,
+	Switch,
+	Text,
+	Tooltip,
 } from '@blueprintjs/core';
 import screenfull from 'screenfull';
 import { useTranslation } from 'react-i18next';
 import FullScreenEnter from '../../images/fullscreen_24px.svg';
 import FullScreenExit from '../../images/fullscreen_exit-24px.svg';
-import { Col, Row } from 'react-flexbox-grid';
 import {
 	VideoQuality,
 	type VideoQualityType,
@@ -28,14 +25,6 @@ import { handlePlayerToggleFullscreen } from './handlePlayerToggleFullscreen';
 import initScreenfullOnChange from './initScreenfullOnChange';
 import { ScreenSharingSource } from '../../features/PeerConnection/ScreenSharingSourceEnum';
 import './index.css';
-
-const videoQualityButtonStyle: React.CSSProperties = {
-	width: '100%',
-	display: 'flex',
-	justifyContent: 'center',
-	alignItems: 'center',
-	textAlign: 'center',
-};
 
 interface PlayerControlPanelProps {
 	onSwitchChangedCallback: (isEnabled: boolean) => void;
@@ -49,7 +38,6 @@ interface PlayerControlPanelProps {
 	isRemoteControlAllowed: boolean;
 	isRemoteControlActive: boolean;
 	onRemoteControlToggle: () => void;
-	// toaster: undefined | HTMLDivElement;
 }
 
 function PlayerControlPanel(props: PlayerControlPanelProps) {
@@ -67,352 +55,151 @@ function PlayerControlPanel(props: PlayerControlPanelProps) {
 		isRemoteControlActive,
 		onRemoteControlToggle,
 	} = props;
-
+	const [isFullScreenOn, setIsFullScreenOn] = useState(false);
 	const isFullScreenAPIAvailable = screenfull.isEnabled;
 
-	const [isFullScreenOn, setIsFullScreenOn] = useState(false);
+	useEffect(() => initScreenfullOnChange(setIsFullScreenOn), []);
 
-	useEffect(() => {
-		const cleanup = initScreenfullOnChange(setIsFullScreenOn);
-		return cleanup;
-	}, []);
-
-	const handleClickFullscreenWhenDefaultPlayerIsOn = useCallback(() => {
+	const toggleDefaultPlayerFullscreen = useCallback(() => {
 		const result = handlePlayerToggleFullscreen();
-		if (result === 'failed') {
-			console.warn('Unable to toggle fullscreen');
-			return result;
-		}
-		setIsFullScreenOn(result === 'entered');
+		if (result !== 'failed') setIsFullScreenOn(result === 'entered');
 		return result;
-	}, [setIsFullScreenOn]);
-
-	const handleLogoClick = useCallback(() => {
-		window.open('https://deskreen.com', '_blank');
 	}, []);
 
-	const handleContributeClick = useCallback(() => {
-		window.open('https://deskreen.com/download', '_blank');
-	}, []);
-
-	const handlePlayPauseClick = useCallback(() => {
-		handleClickPlayPause();
-	}, [handleClickPlayPause]);
-
-	const handleVideoQualitySelect = useCallback(
-		(quality: VideoQualityType) => {
-			setVideoQuality(quality);
-		},
-		[setVideoQuality],
-	);
-
-	const handleDefaultPlayerToggle = useCallback(() => {
-		const nextState = !isDefaultPlayerTurnedOn;
-		onSwitchChangedCallback(nextState);
-	}, [isDefaultPlayerTurnedOn, onSwitchChangedCallback]);
-
-	const handleFullscreenClick = useCallback(() => {
+	const handleFullscreen = useCallback(() => {
 		const result = isDefaultPlayerTurnedOn
-			? handleClickFullscreenWhenDefaultPlayerIsOn()
+			? toggleDefaultPlayerFullscreen()
 			: handleClickFullscreen();
-		if (result === 'failed') return;
+		if (result === 'failed') console.warn('Unable to toggle fullscreen');
 	}, [
 		handleClickFullscreen,
-		handleClickFullscreenWhenDefaultPlayerIsOn,
 		isDefaultPlayerTurnedOn,
+		toggleDefaultPlayerFullscreen,
 	]);
 
+	const remoteControlTooltip = isRemoteControlAllowed
+		? isRemoteControlActive
+			? t('Stop controlling the shared screen')
+			: t('Control the shared screen')
+		: t('The host must allow remote control');
+
 	return (
-			<Card elevation={4}>
-				<Row between="xs" middle="xs">
-					<Col xs={12} md={3}>
-						<Row middle="xs" start="xs">
-							<Col xs>
-								<Tooltip
-									content={t('Click to visit our website')}
-									position={Position.BOTTOM}
-								>
-									<Button minimal onClick={handleLogoClick}>
-										<Row middle="xs">
-											<img
-												src="/img/logo512.png"
-												alt="logo"
-												style={{ height: '72px', marginRight: '12px' }}
-											/>
-											<H3 style={{ margin: 0 }}>Deskreen CE Viewer</H3>
-										</Row>
-									</Button>
-								</Tooltip>
-							</Col>
-							<Col xs>
-								<Tooltip
-									content={t('get-deskreen-pro-tooltip')}
-									position={Position.BOTTOM}
-								>
-									<Button
-										style={{
-											borderRadius: '100px',
-											marginLeft: '8px',
-											padding: '8px 18px',
-											minHeight: '36px',
-											background:
-												'linear-gradient(135deg, hsl(258, 90%, 66%) 0%, hsl(210, 96%, 62%) 30%, hsl(192, 94%, 44%) 70%, hsl(28, 96%, 58%) 100%)',
-											border: 'none',
-											boxShadow:
-												'0 4px 12px rgba(102, 51, 204, 0.4), 0 2px 4px rgba(102, 51, 204, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-											transition: 'all 0.2s ease',
-										}}
-										onClick={handleContributeClick}
-										onMouseEnter={(e) => {
-											e.currentTarget.style.transform = 'translateY(-1px)';
-											e.currentTarget.style.boxShadow =
-												'0 6px 16px rgba(102, 51, 204, 0.5), 0 3px 6px rgba(102, 51, 204, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
-										}}
-										onMouseLeave={(e) => {
-											e.currentTarget.style.transform = 'translateY(0)';
-											e.currentTarget.style.boxShadow =
-												'0 4px 12px rgba(102, 51, 204, 0.4), 0 2px 4px rgba(102, 51, 204, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
-										}}
-									>
-										<div
-											style={{
-												display: 'flex',
-												alignItems: 'center',
-												gap: '8px',
-											}}
-										>
-											<Icon
-												icon="clean"
-												size={20}
-												color="#D4AF37"
-												style={{
-													flexShrink: 0,
-													filter:
-														'brightness(1.1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))',
-												}}
-											/>
-											<Text
-												style={{
-													lineHeight: '1',
-													whiteSpace: 'nowrap',
-													fontSize: '14px',
-													fontWeight: '600',
-													color: '#ffffff',
-													textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
-												}}
-											>
-												{t('get-deskreen-pro')}
-											</Text>
-										</div>
-									</Button>
-								</Tooltip>
-							</Col>
-						</Row>
-					</Col>
-					<Col xs={12} md={5}>
-						<Row center="xs" style={{ height: '42px' }}>
-							<ButtonGroup
-								style={{
-									borderRadius: '20px',
-									backgroundColor: '#137CBD',
-									height: '42px',
-								}}
-							>
-								<Tooltip content={isPlaying ? t('Click to Pause Video') : t('Click to Play Video')} position={Position.BOTTOM}>
-									<Button
-										minimal
-										onClick={handlePlayPauseClick}
-										style={{
-											color: 'white',
-											backgroundColor: !isPlaying ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
-											boxShadow: !isPlaying ? '0 0 20px rgba(19, 124, 189, 0.8), 0 0 40px rgba(19, 124, 189, 0.6)' : 'none',
-											transition: 'all 0.3s ease-in-out',
-											border: 'none',
-											outline: 'none',
-											boxSizing: 'border-box',
-											padding: '0 20px',
-											borderRadius: '20px 0 0 20px',
-											width: '120px',
-											minWidth: '120px',
-											maxWidth: '120px',
-										}}
-										className={!isPlaying ? 'play-pause-button play-pause-button-glow' : 'play-pause-button'}
-									>
-										<span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-											<Icon icon={isPlaying ? 'pause' : 'play'} color="white" />
-											<Text className="bp3-text-large play-pause-text" style={{ color: 'white' }}>
-												{isPlaying ? t('Pause') : t('Play')}
-											</Text>
-										</span>
-									</Button>
-								</Tooltip>
-								<Popover
-									content={
-										<>
-											<H5>{`${t('Video Settings')}:`}</H5>
-											<Divider />
-											<Row
-												style={{
-													justifyContent: 'center',
-												}}
-											>
-												<Tooltip
-													content={t('flip-the-screen-is-pro-version-only')}
-													position={Position.TOP}
-												>
-													<span
-														style={{
-															display: 'block',
-															width: '100%',
-															textAlign: 'center',
-														}}
-													>
-														<Button
-															icon="key-tab"
-															minimal
-															style={videoQualityButtonStyle}
-															disabled={true}
-														>
-															{t('Flip')}
-														</Button>
-													</span>
-												</Tooltip>
-											</Row>
-											<Divider />
-											{Object.values(VideoQuality).map(
-												(q: VideoQualityType) => {
-													return (
-														<Row key={q}>
-															<Button
-																minimal
-																active={selectedVideoQuality === q}
-																style={videoQualityButtonStyle}
-																disabled={
-																	screenSharingSourceType ===
-																	ScreenSharingSource.WINDOW
-																}
-																onClick={() => {
-																	handleVideoQualitySelect(q);
-																	// toaster?.show({
-																	//   icon: 'clean',
-																	//   intent: Intent.PRIMARY,
-																	//   message: `${t(
-																	//     'Video quality has been changed to'
-																	//   )} ${q}`,
-																	// });
-																}}
-															>
-																{q}
-															</Button>
-														</Row>
-													);
-												},
-											)}
-										</>
-									}
-									position={Position.BOTTOM}
-									popoverClassName={Classes.POPOVER_CONTENT_SIZING}
-								>
-									<Tooltip
-										content={t('Click to Open Video Settings')}
-										position={Position.BOTTOM}
-									>
+		<Card elevation={3} className="viewer-control-panel">
+			<div className="viewer-toolbar">
+				<div className="viewer-brand" aria-label="Deskreen Viewer">
+					<img src="/img/logo512.png" alt="" className="viewer-brand-logo" />
+					<div className="viewer-brand-copy">
+						<Text className="viewer-brand-title">Deskreen Viewer</Text>
+						<Text className="viewer-brand-subtitle">Local secure session</Text>
+					</div>
+				</div>
+
+				<ButtonGroup
+					className="viewer-control-group"
+					aria-label="Player controls"
+				>
+					<Tooltip
+						content={
+							isPlaying ? t('Click to Pause Video') : t('Click to Play Video')
+						}
+						position={Position.BOTTOM}
+					>
+						<Button
+							minimal
+							icon={isPlaying ? 'pause' : 'play'}
+							className="viewer-control-button viewer-play-button"
+							onClick={handleClickPlayPause}
+						>
+							<span className="viewer-control-label">
+								{isPlaying ? t('Pause') : t('Play')}
+							</span>
+						</Button>
+					</Tooltip>
+
+					<Popover
+						position={Position.BOTTOM}
+						popoverClassName={Classes.POPOVER_CONTENT_SIZING}
+						content={
+							<div className="viewer-quality-menu">
+								<H5>{t('Video Settings')}</H5>
+								<Divider />
+								{Object.values(VideoQuality).map(
+									(quality: VideoQualityType) => (
 										<Button
+											key={quality}
 											minimal
-											style={{
-												color: 'white',
-												outline: 'none',
-												boxShadow: 'none',
-												borderRadius: '0',
-												padding: '0 20px',
-											}}
-											className="settings-button-separator"
+											active={selectedVideoQuality === quality}
+											disabled={
+												screenSharingSourceType === ScreenSharingSource.WINDOW
+											}
+											onClick={() => setVideoQuality(quality)}
 										>
-											<Icon icon="cog" color="white" />
+											{quality}
 										</Button>
-									</Tooltip>
-								</Popover>
-								<Tooltip
-									content={
-										isRemoteControlAllowed
-											? isRemoteControlActive
-												? t('Stop controlling the shared screen')
-												: t('Control the shared screen')
-											: t('The host must allow remote control')
-									}
-									position={Position.BOTTOM}
-								>
-									<Button
-										minimal
-										icon="hand"
-										disabled={!isRemoteControlAllowed}
-										active={isRemoteControlActive}
-										onClick={onRemoteControlToggle}
-										style={{
-											color: 'white',
-											outline: 'none',
-											boxShadow: 'none',
-											borderRadius: '0',
-											padding: '0 20px',
-											backgroundColor: isRemoteControlActive
-												? 'rgba(255, 255, 255, 0.22)'
-												: 'transparent',
-										}}
-										aria-label={t('Remote control')}
-									/>
-								</Tooltip>
-								<Tooltip
-									content={t('Click to Enter Full Screen Mode')}
-									position={Position.BOTTOM}
-								>
-									<Button
-										minimal
-										onClick={handleFullscreenClick}
-										style={{
-											color: 'white',
-											border: 'none',
-											outline: 'none',
-											boxShadow: 'none',
-											borderRadius: '0 20px 20px 0',
-											padding: '0 20px',
-										}}
-									>
-										<img
-											src={isFullScreenOn ? FullScreenExit : FullScreenEnter}
-											width={16}
-											height={16}
-											style={{
-												transform: 'scale(1.5) translateY(1px)',
-												filter:
-													'invert(100%) sepia(100%) saturate(0%) hue-rotate(127deg) brightness(107%) contrast(102%)',
-											}}
-											alt="fullscreen-toggle"
-										/>
-									</Button>
-								</Tooltip>
-							</ButtonGroup>
-						</Row>
-					</Col>
-					<Col xs={12} md={3}>
-						<Row end="xs">
-							<Col xs={12}>
-								<Switch
-									onChange={handleDefaultPlayerToggle}
-									innerLabel={isDefaultPlayerTurnedOn ? t('ON') : t('OFF')}
-									inline
-									label={t('Default Video Player')}
-									alignIndicator={Alignment.RIGHT}
-									checked={isDefaultPlayerTurnedOn}
-									disabled={!isFullScreenAPIAvailable}
-									style={{
-										marginBottom: '12px',
-									}}
-								/>
-							</Col>
-						</Row>
-					</Col>
-				</Row>
-			</Card>
+									),
+								)}
+							</div>
+						}
+					>
+						<Tooltip
+							content={t('Click to Open Video Settings')}
+							position={Position.BOTTOM}
+						>
+							<Button
+								minimal
+								icon="cog"
+								className="viewer-control-button"
+								aria-label={t('Video Settings')}
+							/>
+						</Tooltip>
+					</Popover>
+
+					<Tooltip content={remoteControlTooltip} position={Position.BOTTOM}>
+						<Button
+							minimal
+							icon="hand"
+							disabled={!isRemoteControlAllowed}
+							active={isRemoteControlActive}
+							onClick={onRemoteControlToggle}
+							className={`viewer-control-button viewer-remote-button${
+								isRemoteControlActive ? ' is-active' : ''
+							}`}
+							aria-label={t('Remote control')}
+						/>
+					</Tooltip>
+
+					<Tooltip
+						content={t('Click to Enter Full Screen Mode')}
+						position={Position.BOTTOM}
+					>
+						<Button
+							minimal
+							className="viewer-control-button"
+							onClick={handleFullscreen}
+							aria-label={t('Click to Enter Full Screen Mode')}
+						>
+							<img
+								src={isFullScreenOn ? FullScreenExit : FullScreenEnter}
+								width={18}
+								height={18}
+								className="viewer-fullscreen-icon"
+								alt=""
+							/>
+						</Button>
+					</Tooltip>
+				</ButtonGroup>
+
+				<Switch
+					className="viewer-player-switch"
+					onChange={() => onSwitchChangedCallback(!isDefaultPlayerTurnedOn)}
+					innerLabel={isDefaultPlayerTurnedOn ? t('ON') : t('OFF')}
+					label={t('Default Video Player')}
+					alignIndicator={Alignment.RIGHT}
+					checked={isDefaultPlayerTurnedOn}
+					disabled={!isFullScreenAPIAvailable}
+				/>
+			</div>
+		</Card>
 	);
 }
 

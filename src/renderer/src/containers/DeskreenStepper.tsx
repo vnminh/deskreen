@@ -41,10 +41,10 @@ const useStyles = makeStyles(() =>
 		},
 		stepLabelContent: {
 			marginTop: '10px !important',
-			height: '110px',
+			minHeight: '76px',
 		},
 		stepperComponent: {
-			paddingBottom: '0px',
+			padding: '18px 12px 0',
 		},
 	}),
 );

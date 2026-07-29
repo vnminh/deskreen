@@ -17,6 +17,7 @@ export default async function handlePeerOnData(
 	}
 
 	if (dataJSON.type === 'remote_control_input') {
+		if (!peerConnection.remoteControlEnabled) return;
 		window.electron.ipcRenderer.send(
 			IpcEvents.RemoteControlInput,
 			dataJSON.payload,
@@ -67,6 +68,9 @@ export default async function handlePeerOnData(
 
 		// update local stream reference to new stream
 		peerConnection.localStream = newStream;
+		if (peerConnection.remoteControlEnabled) {
+			await peerConnection.updateVideoLatencyPreference();
+		}
 	}
 
 	if (dataJSON.type === 'get_sharing_source_type') {
