@@ -39,6 +39,65 @@ export const initIpcMainHandlers = (mainWindow: BrowserWindow): void => {
 		);
 	};
 
+	const remoteControlDisplayCache = new Map<
+		string,
+		{ sourceId: string; display: Display }
+	>();
+
+	const resolveRemoteControlDisplay = (
+		session: SharingSession,
+	): Display | undefined => {
+		const cached = remoteControlDisplayCache.get(session.id);
+		if (cached?.sourceId === session.desktopCapturerSourceID) {
+			return cached.display;
+		}
+
+		const sourcesService = getDeskreenGlobal().desktopCapturerSourcesService;
+		const displays = screen.getAllDisplays();
+		const sourceDisplayId =
+			sourcesService.getSourceDisplayIDByDisplayCapturerSourceID(
+				session.desktopCapturerSourceID,
+			);
+		let display = displays.find(
+			(candidate) => `${candidate.id}` === sourceDisplayId,
+		);
+
+		if (!display && displays.length === 1) {
+			[display] = displays;
+		}
+
+		if (!display) {
+			const sourceIndex = sourcesService
+				.getScreenSources()
+				.findIndex((source) => source.id === session.desktopCapturerSourceID);
+			if (sourceIndex >= 0 && sourceIndex < displays.length) {
+				display = displays[sourceIndex];
+			}
+		}
+
+		if (!display) {
+			console.error('Unable to resolve remote control display', {
+				sourceId: session.desktopCapturerSourceID,
+				sourceDisplayId,
+				displayIds: displays.map((candidate) => `${candidate.id}`),
+			});
+			return undefined;
+		}
+
+		if (`${display.id}` !== sourceDisplayId) {
+			console.warn('Using remote control display fallback', {
+				sourceId: session.desktopCapturerSourceID,
+				sourceDisplayId,
+				displayId: `${display.id}`,
+			});
+		}
+		remoteControlDisplayCache.set(session.id, {
+			sourceId: session.desktopCapturerSourceID,
+			display,
+		});
+		return display;
+	};
+
 	ipcMain.on('client-changed-language', async (_, newLangCode) => {
 		i18n.changeLanguage(newLangCode);
 		if (store.has(ElectronStoreKeys.AppLanguage)) {
@@ -269,6 +328,7 @@ export const initIpcMainHandlers = (mainWindow: BrowserWindow): void => {
 			}
 			sharingSession?.disconnectByHostMachineUser();
 			sharingSession?.destroy();
+			remoteControlDisplayCache.delete(sessionId);
 			getDeskreenGlobal().sharingSessionService.sharingSessions.delete(
 				sessionId,
 			);
@@ -472,6 +532,7 @@ export const initIpcMainHandlers = (mainWindow: BrowserWindow): void => {
 			getDeskreenGlobal().sharingSessionService.sharingSessions.get(id);
 		sharingSession?.setStatus(SharingSessionStatusEnum.DESTROYED);
 		sharingSession?.destroy();
+		remoteControlDisplayCache.delete(id);
 		getDeskreenGlobal().sharingSessionService.sharingSessions.delete(id);
 	});
 
@@ -550,8 +611,11 @@ export const initIpcMainHandlers = (mainWindow: BrowserWindow): void => {
 
 			const helperId = session.peerConnectionHelperRenderer?.webContents.id;
 			session.setRemoteControlEnabled(enabled);
-			if (!enabled && helperId !== undefined) {
-				remoteControlService.releaseSession(helperId);
+			if (!enabled) {
+				remoteControlDisplayCache.delete(session.id);
+				if (helperId !== undefined) {
+					remoteControlService.releaseSession(helperId);
+				}
 			}
 			return session.remoteControlEnabled;
 		},
@@ -579,13 +643,7 @@ export const initIpcMainHandlers = (mainWindow: BrowserWindow): void => {
 				return;
 			}
 
-			const displayId =
-				getDeskreenGlobal().desktopCapturerSourcesService.getSourceDisplayIDByDisplayCapturerSourceID(
-					session.desktopCapturerSourceID,
-				);
-			const display = screen
-				.getAllDisplays()
-				.find((candidate) => `${candidate.id}` === displayId);
+			const display = resolveRemoteControlDisplay(session);
 			if (!display) return;
 
 			remoteControlService.handleInput(event.sender.id, display, input);
